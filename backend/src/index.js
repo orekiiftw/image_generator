@@ -41,7 +41,15 @@ app.post("/imagine", async (c) => {
     const url = new URL("https://api.paxsenix.biz.id/ai-image/gptimage1");
     url.searchParams.set("text", inputQuery);
     
-    const response = await fetch(url);
+    const response = await fetch(url,{
+            headers: {
+                // Try setting a common browser User-Agent
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+                // Add other potentially useful headers like Accept, if the API expects them
+                'Accept': 'application/json',
+                // You might also want to forward some headers from the original request if relevant, but start simple.
+              }
+            });
     const data = await response.json();
 
     if (!data.task_url) {
