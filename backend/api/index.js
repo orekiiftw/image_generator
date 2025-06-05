@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { handle } from "hono/vercel";
 import axios from "axios";
 import { cors } from "hono/cors";
 
@@ -19,7 +20,7 @@ async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
     console.log(
       `Attempt ${attempt}: Status is "${data.status}". Waiting...`
     );
-    await Bun.sleep(interval);
+    await new Promise((res) => setTimeout(res, interval));
   }
   throw new Error("Image was not ready in time.");
 }
@@ -39,7 +40,7 @@ app.post("/imagine", async (c) => {
       throw new Error("No task_url returned from image API.");
     }
 
-    await Bun.sleep(60000);
+    await new Promise((res) => setTimeout(res, 60000));
 
     const imageUrl = await waitForImage(response.data.task_url);
 
@@ -55,4 +56,5 @@ app.post("/imagine", async (c) => {
   }
 });
 
-export default app;
+// Vercel handler export
+export const POST = handle(app);
