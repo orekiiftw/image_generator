@@ -1,16 +1,14 @@
 import { Hono } from "hono";
-import { handle } from "hono/vercel";
-import axios from "axios";
-// Remove this line: import { cors } from "hono/cors";
+import { cors } from "hono/cors";
 
 const app = new Hono();
 
-// Remove this line: app.use("*", cors());
+app.use("*", cors());
 
 async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const response = await axios.get(task_url);
-    const data = response.data;
+    const response = await fetch(task_url); 
+    const data = await response.json();
 
     if (data.ok && data.url) {
       console.log("Image is ready:", data.url);
@@ -20,7 +18,7 @@ async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
     console.log(
       `Attempt ${attempt}: Status is "${data.status}". Waiting...`
     );
-    await new Promise((r) => setTimeout(r, interval));
+    await new Promise(resolve => setTimeout(resolve, interval)); 
   }
   throw new Error("Image was not ready in time.");
 }
@@ -29,20 +27,21 @@ app.post("/imagine", async (c) => {
   try {
     const { inputQuery } = await c.req.json();
 
-    const response = await axios.get(
-      "https://api.paxsenix.biz.id/ai-image/gptimage1",
-      {
-        params: { text: inputQuery },
-      }
-    );
+    // Use fetch instead of axios
+    const url = new URL("https://api.paxsenix.biz.id/ai-image/gptimage1");
+    url.searchParams.set("text", inputQuery);
+    
+    const response = await fetch(url);
+    const data = await response.json();
 
-    if (!response.data.task_url) {
+    if (!data.task_url) {
       throw new Error("No task_url returned from image API.");
     }
 
-    await new Promise((r) => setTimeout(r, 60000));
+    
+    await new Promise(resolve => setTimeout(resolve, 60000));
 
-    const imageUrl = await waitForImage(response.data.task_url);
+    const imageUrl = await waitForImage(data.task_url);
 
     return c.json({
       image_url: imageUrl,
@@ -56,4 +55,4 @@ app.post("/imagine", async (c) => {
   }
 });
 
-export default handle(app);
+export default app;
