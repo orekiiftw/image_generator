@@ -33,7 +33,7 @@ function App() {
       };
 
       const apiResponse = await axios.post(
-        "https://image-generator-eight-black.vercel.app/api/imagine",
+        "https://image-generator-4qjrdb7no-orekis-projects-910cdc8e.vercel.app/api/imagine",
         requestData
       );
       setMessages((prevMessages) => {
