@@ -50,4 +50,4 @@ app.post("/imagine", async (c) => {
   }
 });
 
-export const handler = handle(app);
+export default handle(app);
