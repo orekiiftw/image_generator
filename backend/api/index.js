@@ -1,11 +1,4 @@
-import { Hono } from "hono";
-import { handle } from "hono/vercel";
 import axios from "axios";
-import { cors } from "hono/cors";
-
-const app = new Hono();
-
-app.use("*", cors());
 
 async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -20,9 +13,14 @@ async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
   throw new Error("Image was not ready in time.");
 }
 
-app.post("/imagine", async (c) => {
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
   try {
-    const { inputQuery } = await c.req.json();
+    const { inputQuery } = req.body;
 
     const response = await axios.get(
       "https://api.paxsenix.biz.id/ai-image/gptimage1",
@@ -39,15 +37,10 @@ app.post("/imagine", async (c) => {
 
     const imageUrl = await waitForImage(response.data.task_url);
 
-    return c.json({
+    res.status(200).json({
       image_url: imageUrl,
     });
   } catch (error) {
-    return c.json(
-      { error: "Failed to generate image." },
-      500
-    );
+    res.status(500).json({ error: "Failed to generate image." });
   }
-});
-
-export const handler = handle(app);
+}
