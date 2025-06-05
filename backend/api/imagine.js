@@ -20,7 +20,7 @@ async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
     console.log(
       `Attempt ${attempt}: Status is "${data.status}". Waiting...`
     );
-    await new Promise((res) => setTimeout(res, interval));
+    await new Promise((r) => setTimeout(r, interval));
   }
   throw new Error("Image was not ready in time.");
 }
@@ -40,7 +40,7 @@ app.post("/imagine", async (c) => {
       throw new Error("No task_url returned from image API.");
     }
 
-    await new Promise((res) => setTimeout(res, 60000));
+    await new Promise((r) => setTimeout(r, 60000));
 
     const imageUrl = await waitForImage(response.data.task_url);
 
@@ -56,5 +56,5 @@ app.post("/imagine", async (c) => {
   }
 });
 
-// Vercel handler export
-export const POST = handle(app);
+// Export the handler for Vercel
+export const handler = handle(app);
