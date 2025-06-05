@@ -33,7 +33,7 @@ function App() {
       };
 
       const apiResponse = await axios.post(
-        "http://localhost:3000/imagine",
+        "https://image-generator-eight-black.vercel.app/imagine",
         requestData
       );
       setMessages((prevMessages) => {
