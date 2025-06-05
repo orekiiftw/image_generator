@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import axios from "axios";
-import { cors } from "hono/cors";
+// Remove this line: import { cors } from "hono/cors";
 
 const app = new Hono();
 
-app.use("*", cors());
+// Remove this line: app.use("*", cors());
 
 async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -13,8 +13,13 @@ async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
     const data = response.data;
 
     if (data.ok && data.url) {
+      console.log("Image is ready:", data.url);
       return data.url;
     }
+
+    console.log(
+      `Attempt ${attempt}: Status is "${data.status}". Waiting...`
+    );
     await new Promise((r) => setTimeout(r, interval));
   }
   throw new Error("Image was not ready in time.");
@@ -43,6 +48,7 @@ app.post("/imagine", async (c) => {
       image_url: imageUrl,
     });
   } catch (error) {
+    console.error(error);
     return c.json(
       { error: "Failed to generate image." },
       500
