@@ -16,6 +16,7 @@ async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
     const response = await fetch(task_url);
     // Safely get the response as text first
     const responseText = await response.text();
+    console.log(response)
 
     let data;
     try {
@@ -62,6 +63,7 @@ app.post("/imagine", async (c) => {
         'Accept': 'application/json',
       }
     });
+    console.log(response)
 
     // --- KEY CHANGE: Safely parse the initial API response ---
     const responseText = await response.text();
