@@ -45,6 +45,31 @@ async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
   throw new Error("Image was not ready in time.");
 }
 
+// Add this new route to your existing worker code
+app.get("/worker-outbound-ip", async (c) => {
+  try {
+    // This is a public service that echoes the requester's IP info as JSON
+    const response = await fetch("https://ifconfig.co/json");
+
+    if (!response.ok) {
+      return c.text("Failed to fetch outbound IP.", 500);
+    }
+
+    const data = await response.json();
+    const outboundIP = data.ip;
+    const outboundCountry = data.country_iso;
+    const city = data.city;
+
+    const responseMessage = `A sample outbound request from this worker came from:\n\nIP Address: ${outboundIP}\nLocation: ${city}, ${outboundCountry}`;
+
+    return c.text(responseMessage);
+
+  } catch (error) {
+    console.error("Error fetching outbound IP:", error);
+    return c.text("An error occurred.", 500);
+  }
+});
+
 app.post("/imagine", async (c) => {
   // Add CORS headers to the response
   c.header("Access-Control-Allow-Origin", "*");
