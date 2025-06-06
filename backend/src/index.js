@@ -14,15 +14,30 @@ app.options("*", (c) => {
 async function waitForImage(task_url, interval = 10000, maxAttempts = 10) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const response = await fetch(task_url);
-    const data = await response.json();
+    // Safely get the response as text first
+    const responseText = await response.text();
 
+    let data;
+    try {
+      // Try to parse the text as JSON
+      data = JSON.parse(responseText);
+    } catch (e) {
+      // If parsing fails, log the raw text and wait before retrying
+      console.error(
+        `[waitForImage] Attempt ${attempt}: Response was not valid JSON. Content: "${responseText}". Retrying...`
+      );
+      await new Promise(resolve => setTimeout(resolve, interval));
+      continue; // Move to the next attempt
+    }
+
+    // Check for the successful condition in the valid JSON
     if (data.ok && data.url) {
       console.log("Image is ready:", data.url);
       return data.url;
     }
 
     console.log(
-      `Attempt ${attempt}: Status is "${data.status}". Waiting...`
+      `[waitForImage] Attempt ${attempt}: Status is "${data.status || 'unknown'}". Waiting...`
     );
     await new Promise(resolve => setTimeout(resolve, interval));
   }
@@ -41,21 +56,33 @@ app.post("/imagine", async (c) => {
     const url = new URL("https://api.paxsenix.biz.id/ai-image/gptimage1");
     url.searchParams.set("text", inputQuery);
     
-    const response = await fetch(url,{
-            headers: {
-                // Try setting a common browser User-Agent
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-                // Add other potentially useful headers like Accept, if the API expects them
-                'Accept': 'application/json',
-                // You might also want to forward some headers from the original request if relevant, but start simple.
-              }
-            });
-    const data = await response.json();
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      }
+    });
+
+    // --- KEY CHANGE: Safely parse the initial API response ---
+    const responseText = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      
+      console.error("CRITICAL: The initial API response was not valid JSON.");
+      console.error("RAW RESPONSE FROM API:", responseText);
+      throw new Error("The external API did not return valid JSON.");
+    }
+    
 
     if (!data.task_url) {
+      console.error("API response was JSON, but did not contain a 'task_url'. Response:", data);
       throw new Error("No task_url returned from image API.");
     }
 
+    
     await new Promise(resolve => setTimeout(resolve, 60000));
 
     const imageUrl = await waitForImage(data.task_url);
@@ -64,15 +91,14 @@ app.post("/imagine", async (c) => {
       image_url: imageUrl,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error in /imagine route:", error.message);
     return c.json(
-      { error: "Failed to generate image." },
+      { error: "Failed to generate image.", details: error.message },
       500
     );
   }
 });
 
-// Add a test route
 app.get("/", (c) => {
   c.header("Access-Control-Allow-Origin", "*");
   return c.text("Worker is running!");
