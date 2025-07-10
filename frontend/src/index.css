@@ -1,1 +1,49 @@
 @import "tailwindcss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .message-enter {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  }
+  .message-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* General body styling for a smoother font and dark theme */
+body {
+  font-family: 'Inter', sans-serif; /* Using Inter as a modern sans-serif font */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #171717; /* bg-neutral-900 */
+  color: #e5e5e5; /* text-neutral-200 */
+}
+
+/* Custom scrollbar for a more minimal look - Webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #262626; /* neutral-800 */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #525252; /* neutral-600 */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #737373; /* neutral-500 */
+}
+
+/* Firefox scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #525252 #262626; /* thumb track */
+}
