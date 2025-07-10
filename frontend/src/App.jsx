@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react"; // Added useEffect and useRef
 import axios from "axios";
 import { Sparkles } from "lucide-react"; // A nice icon for the title
 
@@ -13,21 +13,21 @@ const WelcomeScreen = ({ onExampleClick }) => {
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center text-white p-4">
-      <Sparkles className="w-16 h-16 mb-4 text-cyan-400" />
-      <h1 className="text-4xl sm:text-5xl font-bold mb-2">Imagine AI</h1>
-      <p className="text-lg text-gray-400 mb-10">
+    <div className="flex flex-col items-center justify-center h-full text-center text-neutral-200 p-6">
+      <Sparkles className="w-20 h-20 mb-6 text-cyan-500" />
+      <h1 className="text-5xl sm:text-6xl font-bold mb-3 text-white">Imagine AI</h1>
+      <p className="text-xl text-neutral-400 mb-12">
         What will you create today?
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full max-w-5xl">
         {examples.map((text, index) => (
           <button
             key={index}
             onClick={() => onExampleClick(text)}
-            className="bg-gray-800 border border-gray-700 rounded-lg p-4 text-left hover:bg-gray-700 transition-colors duration-200"
+            className="bg-neutral-800 border border-neutral-700 rounded-xl p-5 text-left hover:bg-neutral-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
-            {text}
+            <p className="text-neutral-300 text-lg">{text}</p>
           </button>
         ))}
       </div>
@@ -39,10 +39,23 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [inputQuery, setInputQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null); // Ref for scrolling to bottom
+
+  // Scroll to bottom effect for new messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
 
   // --- This function handles clicks from the WelcomeScreen ---
   const handleExampleClick = (prompt) => {
     setInputQuery(prompt);
+    // Optionally, you could immediately submit the prompt or just populate the input
+    // For now, just populating the input
   };
 
   const handleSendQuery = async () => {
@@ -55,22 +68,20 @@ function App() {
       content: inputQuery,
     };
 
-    // Add user message and clear input
     setMessages((prevMessages) => [...prevMessages, userMessage]);
-    const currentQuery = inputQuery; // Capture query before clearing
+    const currentQuery = inputQuery;
     setInputQuery("");
     setIsLoading(true);
 
-    // Add placeholder for AI response
     const aiMessagePlaceholder = {
       role: "assistant",
-      content: "Generating Image, please wait...",
+      content: "🎨 Generating your masterpiece...", // More engaging loading text
     };
     setMessages((prevMessages) => [...prevMessages, aiMessagePlaceholder]);
 
     try {
       const requestData = {
-        inputQuery: currentQuery, // Use the captured query
+        inputQuery: currentQuery,
       };
 
       const apiResponse = await axios.post(
@@ -78,7 +89,6 @@ function App() {
         requestData
       );
 
-      // Update the placeholder with the final image URL
       setMessages((prevMessages) => {
         const newMessages = [...prevMessages];
         const lastMessageIndex = newMessages.length - 1;
@@ -86,16 +96,14 @@ function App() {
         return newMessages;
       });
     } catch (error) {
-      // Update the placeholder with the error message
       setMessages((prevMessages) => {
         const newMessages = [...prevMessages];
         const lastMessageIndex = newMessages.length - 1;
-        // Provide a more user-friendly error from the backend if possible
         const errorMessage =
           error.response?.data?.details ||
           error.message ||
-          "Unknown error occurred";
-        newMessages[lastMessageIndex].content = `An error occurred: ${errorMessage}`;
+          "Oops! Something went wrong.";
+        newMessages[lastMessageIndex].content = `⚠️ An error occurred: ${errorMessage}`;
         return newMessages;
       });
     } finally {
@@ -104,7 +112,7 @@ function App() {
   };
 
   const handleInputKeyPress = (e) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey) { // Send on Enter, allow Shift+Enter for newline
       e.preventDefault();
       handleSendQuery();
     }
@@ -112,76 +120,86 @@ function App() {
 
   return (
     <>
-      <div className="bg-black h-screen flex flex-col">
+      <div className="bg-neutral-900 h-screen flex flex-col font-sans"> {/* Changed bg to darker neutral, added font */}
         {/* --- Main Display Area --- */}
-        <div className="flex-grow p-2 sm:p-4 overflow-y-auto text-white" style={{ paddingBottom: "100px" }}>
-          {/* --- CONDITIONAL RENDERING LOGIC --- */}
-          {/* If there are no messages, show the WelcomeScreen. Otherwise, show the chat. */}
+        <div className="flex-grow p-4 sm:p-6 overflow-y-auto text-neutral-200" style={{ paddingBottom: "120px" }}> {/* Increased padding */}
           {messages.length === 0 ? (
             <WelcomeScreen onExampleClick={handleExampleClick} />
           ) : (
-            messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`mb-3 flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
+            <div className="space-y-6"> {/* Added space-y for consistent message spacing */}
+              {messages.map((msg, index) => (
                 <div
-                  className={`inline-block py-2 px-3 sm:py-3 sm:px-4 rounded-2xl border border-cyan-50 ${
-                    msg.role === "user"
-                      ? "bg-black font-bold break-words text-left max-w-[90vw] sm:max-w-[70%] mb-3 mt-3"
-                      : "bg-black font-semibold ml-2 sm:ml-8 text-left break-words max-w-[90vw] sm:max-w-[70%]"
-                  }`}
-                  style={
-                    msg.role === "assistant" && msg.content.startsWith("http")
-                      ? {
-                          padding: 0,
-                          borderRadius: "1rem",
-                          borderWidth: 2,
-                          maxWidth: "90vw",
-                          overflow: "hidden",
-                        }
-                      : {}
-                  }
+                  key={index}
+                  className={`flex ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  } message-enter message-enter-active`} // Added animation classes
                 >
-                  {msg.role === "assistant" && msg.content.startsWith("http") ? (
-                    <img
-                      src={msg.content}
-                      alt="Generated"
-                      className="rounded-2xl max-w-[80vw] sm:max-w-full h-auto w-auto block"
-                      style={{
-                        display: "block",
-                        borderRadius: "1rem",
-                        maxHeight: 400,
-                      }}
-                    />
-                  ) : (
-                    msg.content
-                  )}
+                  <div
+                    className={`inline-block py-3 px-5 rounded-2xl shadow-md transition-all duration-300 ease-out ${ /* Adjusted padding, added shadow, added transition */
+                      msg.role === "user"
+                        ? "bg-cyan-600 hover:bg-cyan-500 text-white break-words max-w-[85vw] sm:max-w-[65%] " // User message style
+                        : "bg-neutral-700 hover:bg-neutral-600 text-neutral-100 break-words max-w-[85vw] sm:max-w-[65%]" // AI message style
+                    }`}
+                    style={
+                      msg.role === "assistant" && msg.content.startsWith("http")
+                        ? {
+                            padding: 0, // Remove padding for image container
+                            borderRadius: "1rem", // Ensure consistent border radius
+                            overflow: "hidden", // Clip image to rounded corners
+                            border: "2px solid #4A5568" // Neutral border for images
+                          }
+                        : {}
+                    }
+                  >
+                    {msg.role === "assistant" && msg.content.startsWith("http") ? (
+                      <img
+                        src={msg.content}
+                        alt="Generated AI Art" // More descriptive alt text
+                        className="max-w-full h-auto block rounded-lg" // Ensure image is responsive and fits container
+                        style={{
+                          display: "block",
+                           maxHeight: "60vh", // Limit image height
+                        }}
+                      />
+                    ) : (
+                      <p className="whitespace-pre-wrap">{msg.content}</p> // Ensure text wraps and preserves whitespace
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
+          <div ref={messagesEndRef} /> {/* Element to scroll to */}
         </div>
 
         {/* --- Input Bar --- */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black py-3 flex justify-center z-10">
-          <input
-            type="text"
-            placeholder={isLoading ? "Generating..." : "Enter your prompt...."}
-            className="rounded-3xl text-white py-3 px-5 w-[95vw] sm:w-[60%] md:w-[60%] lg:w-[40%] border border-cyan-100 bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+        <div className="fixed bottom-0 left-0 right-0 bg-neutral-900/80 backdrop-blur-sm p-4 flex items-center justify-center z-10 border-t border-neutral-700 transition-all duration-300 ease-in-out"> {/* Frosted glass effect, border, added transition */}
+          <textarea // Changed to textarea for multi-line input
+            rows="1" // Start with one row
+            placeholder={isLoading ? "Conjuring pixels..." : "Describe your vision..."} // More creative placeholder
+            className="rounded-xl text-neutral-200 py-3 px-5 w-[90vw] sm:w-[70%] md:w-[60%] lg:w-[50%] bg-neutral-800 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none border border-neutral-700 transition-shadow duration-200 focus:shadow-cyan-500/30" // Added border, resize-none, focus shadow transition
             value={inputQuery}
-            onChange={(e) => setInputQuery(e.target.value)}
+            onChange={(e) => {
+              setInputQuery(e.target.value);
+              // Auto-resize textarea
+              e.target.style.height = 'auto';
+              e.target.style.height = (e.target.scrollHeight) + 'px';
+            }}
             onKeyPress={handleInputKeyPress}
             disabled={isLoading}
+            style={{ maxHeight: "150px", overflowY: "auto" }} // Limit max height
           />
           <button
-            className="bg-cyan-400 rounded-2xl p-3 ml-2 sm:ml-6 text-black font-semibold disabled:opacity-50 hover:bg-cyan-300 transition-colors"
+            className="bg-cyan-500 hover:bg-cyan-400 rounded-xl p-3 ml-3 text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center shadow-lg" // Adjusted colors, added shadow
             onClick={handleSendQuery}
             disabled={isLoading || !inputQuery.trim()}
+            style={{ minWidth: "100px" }} // Ensure button has a decent width
           >
-            Imagine
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> // Simple spinner
+            ) : (
+              "Imagine"
+            )}
           </button>
         </div>
       </div>
